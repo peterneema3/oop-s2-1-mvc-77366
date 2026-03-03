@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Library.Domain;
 
 namespace Library.MVC.Data
 {
@@ -9,5 +10,6 @@ namespace Library.MVC.Data
             : base(options)
         {
         }
+        public DbSet<Library.Domain.Products> Products { get; set; } = default!;
     }
 }
