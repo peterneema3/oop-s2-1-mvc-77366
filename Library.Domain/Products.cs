@@ -1,6 +1,6 @@
 ﻿namespace Library.Domain
 {
-    public class Product
+    public class Products
     {
 
     }
