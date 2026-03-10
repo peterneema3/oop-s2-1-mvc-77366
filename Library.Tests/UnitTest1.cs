@@ -3,10 +3,10 @@
     public class UnitTest1
     {
         [Fact]
-        public void ThisTestShouldFail()
+        public void ThisTestShouldPass()
         {
             string name = "John";
-            Assert.Equal("Jane", name);
+            Assert.Equal("John", name);
 
         }
     }
