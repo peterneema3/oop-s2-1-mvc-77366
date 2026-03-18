@@ -2,7 +2,7 @@ using Library.MVC.Data;
 using Library.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Bogus; // Make sure Bogus NuGet package is installed
+using Bogus; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,11 +40,12 @@ using (var scope = app.Services.CreateScope())
     // Apply pending migrations
     await db.Database.MigrateAsync();
 
-    // Seed admin
+    // Seed admin user & role
     await SeedRolesAndAdminAsync(services);
 
-    // Seed fake Books and Members if empty
+    // Seed fake Books, Members, Loans
     await SeedFakeDataAsync(db);
+    await SeedFakeLoansAsync(db);
 }
 
 // -------------------------
@@ -82,6 +83,7 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
 
 // -------------------------
 // Seed Admin
@@ -141,4 +143,54 @@ async Task SeedFakeDataAsync(ApplicationDbContext db)
     }
 
     await db.SaveChangesAsync();
+}
+
+// -------------------------
+// Seed fake Loans
+// -------------------------
+async Task SeedFakeLoansAsync(ApplicationDbContext db)
+{
+    if (!db.Loans.Any())
+    {
+        var random = new Random();
+        var books = db.Books.ToList();
+        var members = db.Members.ToList();
+        var loans = new List<Loan>();
+
+        for (int i = 0; i < 15; i++)
+        {
+            var member = members[random.Next(members.Count)];
+            var book = books[random.Next(books.Count)];
+
+            // Skip books already on active loan
+            if (loans.Any(l => l.BookId == book.Id && l.ReturnedDate == null))
+                continue;
+
+            var loanDate = DateTime.Now.AddDays(-random.Next(1, 30));
+            DateTime? returnedDate = null;
+
+            // Randomly mark some loans as returned
+            if (random.NextDouble() < 0.5)
+            {
+                returnedDate = loanDate.AddDays(random.Next(1, 14));
+                book.IsAvailable = true;
+            }
+            else
+            {
+                book.IsAvailable = false;
+            }
+
+            loans.Add(new Loan
+            {
+                BookId = book.Id,
+                MemberId = member.Id,
+                LoanDate = loanDate,
+                DueDate = loanDate.AddDays(14),
+                ReturnedDate = returnedDate
+            });
+        }
+
+        db.Loans.AddRange(loans);
+        await db.SaveChangesAsync();
+    }
 }
