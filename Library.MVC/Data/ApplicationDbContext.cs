@@ -10,6 +10,6 @@ namespace Library.MVC.Data
             : base(options)
         {
         }
-        public DbSet<Library.Domain.Products> Products { get; set; } = default!;
+        public DbSet<Library.Domain.Books> Products { get; set; } = default!;
     }
 }
