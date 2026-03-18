@@ -1,52 +1,36 @@
 ﻿@model Library.Domain.Loan
-
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Create Loan";
 }
 
-<h1>Create</h1>
+<h1>Create Loan</h1>
 
-<h4>Loan</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="BookId"></label>
-                <select asp-for="BookId" asp-items="ViewBag.BookId" class="form-control"></select>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="MemberId"></label>
-                <select asp-for="MemberId" asp-items="ViewBag.MemberId" class="form-control"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="LoanDate" class="control-label"></label>
-                <input asp-for="LoanDate" class="form-control" />
-                <span asp-validation-for="LoanDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DueDate" class="control-label"></label>
-                <input asp-for="DueDate" class="form-control" />
-                <span asp-validation-for="DueDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ReturnedDate" class="control-label"></label>
-                <input asp-for="ReturnedDate" class="form-control" />
-                <span asp-validation-for="ReturnedDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label asp-for="BookId" class="form-label">Book</label>
+        <select asp-for="BookId" class="form-select" asp-items="ViewBag.BookId">
+            <option value="">Select a Book</option>
+        </select>
+        <span asp-validation-for="BookId" class="text-danger"></span>
     </div>
-</div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+    <div class="mb-3">
+        <label asp-for="MemberId" class="form-label">Member</label>
+        <select asp-for="MemberId" class="form-select" asp-items="ViewBag.MemberId">
+            <option value="">Select a Member</option>
+        </select>
+        <span asp-validation-for="MemberId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DueDate" class="form-label">Due Date</label>
+        <input asp-for="DueDate" class="form-control" type="date" />
+        <span asp-validation-for="DueDate" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Loan</button>
+</form>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }
