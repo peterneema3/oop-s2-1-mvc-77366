@@ -22,8 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Views\Customers\" />
-    <Folder Include="Views\Invoices\" />
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
