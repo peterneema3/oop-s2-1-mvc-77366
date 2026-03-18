@@ -9,6 +9,25 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+<form method="get">
+    <input type="text" name="search" placeholder="Search title or author" />
+
+    <select name="category">
+        <option value="">All Categories</option>
+        @foreach (var cat in ViewBag.Categories)
+        {
+            <option value="@cat">@cat</option>
+        }
+    </select>
+
+    <select name="availability">
+        <option value="">All</option>
+        <option value="Available">Available</option>
+        <option value="OnLoan">On Loan</option>
+    </select>
+
+    <button type="submit">Filter</button>
+</form>
 <table class="table">
     <thead>
         <tr>

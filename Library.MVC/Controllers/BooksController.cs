@@ -20,9 +20,37 @@ namespace Library.MVC.Controllers
         }
 
         // GET: Books
-        public async Task<IActionResult> Index()
+        public IActionResult Index(string search, string category, string availability)
         {
-            return View(await _context.Book.ToListAsync());
+            var books = _context.Books.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                books = books.Where(b =>
+                    b.Title.Contains(search) ||
+                    b.Author.Contains(search));
+            }
+
+            if (!string.IsNullOrEmpty(category))
+            {
+                books = books.Where(b => b.Category == category);
+            }
+
+            if (availability == "Available")
+            {
+                books = books.Where(b => b.IsAvailable);
+            }
+            else if (availability == "OnLoan")
+            {
+                books = books.Where(b => !b.IsAvailable);
+            }
+
+            ViewBag.Categories = _context.Books
+                .Select(b => b.Category)
+                .Distinct()
+                .ToList();
+
+            return View(books.ToList());
         }
 
         // GET: Books/Details/5
@@ -33,7 +61,7 @@ namespace Library.MVC.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Book
+            var book = await _context.Books
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (book == null)
             {
@@ -73,7 +101,7 @@ namespace Library.MVC.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Book.FindAsync(id);
+            var book = await _context.Books.FindAsync(id);
             if (book == null)
             {
                 return NotFound();
@@ -124,7 +152,7 @@ namespace Library.MVC.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Book
+            var book = await _context.Books
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (book == null)
             {
@@ -139,10 +167,10 @@ namespace Library.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var book = await _context.Book.FindAsync(id);
+            var book = await _context.Books.FindAsync(id);
             if (book != null)
             {
-                _context.Book.Remove(book);
+                _context.Books.Remove(book);
             }
 
             await _context.SaveChangesAsync();
@@ -151,7 +179,7 @@ namespace Library.MVC.Controllers
 
         private bool BookExists(int id)
         {
-            return _context.Book.Any(e => e.Id == id);
+            return _context.Books.Any(e => e.Id == id);
         }
     }
 }
