@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// -------------------------
+// Add services to the container
+// -------------------------
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -19,18 +21,28 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// Add MVC controllers + Razor Pages
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages(); // <-- Required for MapRazorPages()
 
 var app = builder.Build();
 
+// -------------------------
 // Seed Admin Role and User
+// -------------------------
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    // Ensure database schema is up-to-date before seeding data
+    var db = services.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+
     await SeedRolesAndAdminAsync(services);
 }
 
-// Configure the HTTP request pipeline.
+// -------------------------
+// Configure the HTTP request pipeline
+// -------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -42,27 +54,29 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
+// Map controller routes
 app.MapControllerRoute(
     name: "areas",
-    pattern: "{area:exists}/{controller=Roles}/{action=Index}/{id?}"
-);
+    pattern: "{area:exists}/{controller=Roles}/{action=Index}/{id?}");
 
+// -------------------------
+// Default route points to Books/Index
+// -------------------------
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Books}/{action=Index}/{id?}");
 
-app.MapRazorPages()
-   .WithStaticAssets();
+// Map Razor Pages
+app.MapRazorPages();
 
 app.Run();
-
 
 // -------------------------
 // Seed Method
