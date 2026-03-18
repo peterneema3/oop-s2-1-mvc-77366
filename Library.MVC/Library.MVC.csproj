@@ -21,8 +21,4 @@
     <ProjectReference Include="..\Library.Tests\Library.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
