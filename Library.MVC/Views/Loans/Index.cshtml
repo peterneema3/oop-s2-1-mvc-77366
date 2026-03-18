@@ -1,59 +1,60 @@
 ﻿@model IEnumerable<Library.Domain.Loan>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Loans";
 }
 
-<h1>Index</h1>
+<h1>Loans</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">Create New Loan</a>
 </p>
-<table class="table">
+
+<table class="table table-striped">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Book)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Member)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LoanDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DueDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ReturnedDate)
-            </th>
-            <th></th>
+            <th>Book</th>
+            <th>Member</th>
+            <th>Loan Date</th>
+            <th>Due Date</th>
+            <th>Returned Date</th>
+            <th>Status</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Book.Author)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Member.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LoanDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DueDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ReturnedDate)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var loan in Model)
+        {
+            <tr>
+                <td>@loan.Book?.Title</td>
+                <td>@loan.Member?.FullName</td>
+                <td>@loan.LoanDate.ToShortDateString()</td>
+                <td>@loan.DueDate.ToShortDateString()</td>
+                <td>@(loan.ReturnedDate.HasValue? loan.ReturnedDate.Value.ToShortDateString() : "-")</td>
+                <td>
+                    @if (loan.ReturnedDate == null && loan.DueDate < DateTime.Today)
+                    {
+                        <span class="text-danger">Overdue</span>
+                    }
+                    else if (loan.ReturnedDate == null)
+                    {
+                        <span class="text-success">On Loan</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Returned</span>
+                    }
+                </td>
+                <td>
+                    @if (loan.ReturnedDate == null)
+                    {
+                        <form asp-action="Return" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="@loan.Id" />
+                            <button type="submit" class="btn btn-sm btn-success">Return</button>
+                        </form>
+                    }
+                    <a asp-action="Delete" asp-route-id="@loan.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

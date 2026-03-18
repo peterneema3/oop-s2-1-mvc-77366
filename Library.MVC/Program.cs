@@ -1,11 +1,13 @@
 using Library.MVC.Data;
+using Library.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Bogus; // Make sure Bogus NuGet package is installed
 
 var builder = WebApplication.CreateBuilder(args);
 
 // -------------------------
-// Add services to the container
+// Add services
 // -------------------------
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -15,33 +17,38 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Add Identity with Roles support
+// Add Identity with Roles
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Add MVC controllers + Razor Pages
+// Add MVC + Razor Pages
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages(); // <-- Required for MapRazorPages()
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
 // -------------------------
-// Seed Admin Role and User
+// Ensure DB & seed data
 // -------------------------
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    // Ensure database schema is up-to-date before seeding data
     var db = services.GetRequiredService<ApplicationDbContext>();
+
+    // Apply pending migrations
     await db.Database.MigrateAsync();
 
+    // Seed admin
     await SeedRolesAndAdminAsync(services);
+
+    // Seed fake Books and Members if empty
+    await SeedFakeDataAsync(db);
 }
 
 // -------------------------
-// Configure the HTTP request pipeline
+// Configure middleware
 // -------------------------
 if (app.Environment.IsDevelopment())
 {
@@ -61,25 +68,23 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map controller routes
+// -------------------------
+// Area & default routes
+// -------------------------
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Roles}/{action=Index}/{id?}");
 
-// -------------------------
-// Default route points to Books/Index
-// -------------------------
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Books}/{action=Index}/{id?}");
 
-// Map Razor Pages
 app.MapRazorPages();
 
 app.Run();
 
 // -------------------------
-// Seed Method
+// Seed Admin
 // -------------------------
 async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
 {
@@ -90,13 +95,9 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
     string adminEmail = "admin@library.com";
     string adminPassword = "Admin123!";
 
-    // Create Admin role if it doesn't exist
     if (!await roleManager.RoleExistsAsync(adminRole))
-    {
         await roleManager.CreateAsync(new IdentityRole(adminRole));
-    }
 
-    // Create Admin user if it doesn't exist
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
@@ -109,4 +110,35 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
         await userManager.CreateAsync(adminUser, adminPassword);
         await userManager.AddToRoleAsync(adminUser, adminRole);
     }
+}
+
+// -------------------------
+// Seed fake Books & Members
+// -------------------------
+async Task SeedFakeDataAsync(ApplicationDbContext db)
+{
+    if (!db.Books.Any())
+    {
+        var categories = new[] { "Fiction", "Non-Fiction", "Science", "History", "Biography" };
+        var faker = new Faker<Book>()
+            .RuleFor(b => b.Title, f => f.Lorem.Sentence(3))
+            .RuleFor(b => b.Author, f => f.Name.FullName())
+            .RuleFor(b => b.Isbn, f => f.Random.Replace("###-##########"))
+            .RuleFor(b => b.Category, f => f.PickRandom(categories))
+            .RuleFor(b => b.IsAvailable, f => true);
+
+        db.Books.AddRange(faker.Generate(20));
+    }
+
+    if (!db.Members.Any())
+    {
+        var faker = new Faker<Member>()
+            .RuleFor(m => m.FullName, f => f.Name.FullName())
+            .RuleFor(m => m.Email, f => f.Internet.Email())
+            .RuleFor(m => m.Phone, f => f.Phone.PhoneNumber());
+
+        db.Members.AddRange(faker.Generate(10));
+    }
+
+    await db.SaveChangesAsync();
 }
