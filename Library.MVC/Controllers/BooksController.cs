@@ -78,7 +78,7 @@ namespace Library.MVC.Controllers
         }
 
         // POST: Books/Create
-        .
+     
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,Author,Isbn,Category,IsAvailable")] Book book)
