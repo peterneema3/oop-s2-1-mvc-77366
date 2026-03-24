@@ -2,26 +2,29 @@ using Library.MVC.Data;
 using Library.Domain;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Bogus; 
+using Bogus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// -------------------------
 // Add services
-// -------------------------
+
+// Get connection string from appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+// Register DbContext with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Add Identity with Roles
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-    options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+// Use DefaultIdentity + Roles + no email confirmation
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false; 
+})
+.AddRoles<IdentityRole>() 
+.AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add MVC + Razor Pages
 builder.Services.AddControllersWithViews();
@@ -37,13 +40,13 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var db = services.GetRequiredService<ApplicationDbContext>();
 
-    // Apply pending migrations
+    // Apply migrations automatically
     await db.Database.MigrateAsync();
 
-    // Seed admin user & role
+    // Seed admin + roles
     await SeedRolesAndAdminAsync(services);
 
-    // Seed fake Books, Members, Loans
+    // Seed fake data
     await SeedFakeDataAsync(db);
     await SeedFakeLoansAsync(db);
 }
@@ -70,16 +73,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // -------------------------
-// Area & default routes
+// Routes
 // -------------------------
+
+// Admin area route
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Roles}/{action=Index}/{id?}");
 
+// Default route → Books page
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Books}/{action=Index}/{id?}");
 
+// Required for Identity pages (Login/Register)
 app.MapRazorPages();
 
 app.Run();
@@ -97,9 +104,11 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
     string adminEmail = "admin@library.com";
     string adminPassword = "Admin123!";
 
+    // Create role if not exists
     if (!await roleManager.RoleExistsAsync(adminRole))
         await roleManager.CreateAsync(new IdentityRole(adminRole));
 
+    // Create admin user if not exists
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
@@ -107,12 +116,14 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
         {
             UserName = adminEmail,
             Email = adminEmail,
-            EmailConfirmed = true
+            EmailConfirmed = true // allow login immediately
         };
+
         await userManager.CreateAsync(adminUser, adminPassword);
         await userManager.AddToRoleAsync(adminUser, adminRole);
     }
 }
+
 
 // -------------------------
 // Seed fake Books & Members
@@ -122,6 +133,7 @@ async Task SeedFakeDataAsync(ApplicationDbContext db)
     if (!db.Books.Any())
     {
         var categories = new[] { "Fiction", "Non-Fiction", "Science", "History", "Biography" };
+
         var faker = new Faker<Book>()
             .RuleFor(b => b.Title, f => f.Lorem.Sentence(3))
             .RuleFor(b => b.Author, f => f.Name.FullName())
@@ -145,6 +157,7 @@ async Task SeedFakeDataAsync(ApplicationDbContext db)
     await db.SaveChangesAsync();
 }
 
+
 // -------------------------
 // Seed fake Loans
 // -------------------------
@@ -162,14 +175,14 @@ async Task SeedFakeLoansAsync(ApplicationDbContext db)
             var member = members[random.Next(members.Count)];
             var book = books[random.Next(books.Count)];
 
-            // Skip books already on active loan
+            // Prevent duplicate active loans
             if (loans.Any(l => l.BookId == book.Id && l.ReturnedDate == null))
                 continue;
 
             var loanDate = DateTime.Now.AddDays(-random.Next(1, 30));
             DateTime? returnedDate = null;
 
-            // Randomly mark some loans as returned
+            // Random return logic
             if (random.NextDouble() < 0.5)
             {
                 returnedDate = loanDate.AddDays(random.Next(1, 14));
