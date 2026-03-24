@@ -23,9 +23,9 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // Use DefaultIdentity + Roles + no email confirmation
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false; // IMPORTANT FIX
+    options.SignIn.RequireConfirmedAccount = false; 
 })
-.AddRoles<IdentityRole>() // keep roles support
+.AddRoles<IdentityRole>() 
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Add MVC + Razor Pages
