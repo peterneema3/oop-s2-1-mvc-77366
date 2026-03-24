@@ -6,9 +6,7 @@ using Bogus;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// -------------------------
 // Add services
-// -------------------------
 
 // Get connection string from appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
