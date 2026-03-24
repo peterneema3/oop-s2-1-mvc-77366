@@ -6,27 +6,29 @@ using Bogus;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// -------------------------
 // Add services
+// -------------------------
 
-// Get connection string from appsettings.json
+// Get connection string
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// Register DbContext with SQL Server
+// Register DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Use DefaultIdentity + Roles + no email confirmation
+// Identity setup 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false; 
+    options.SignIn.RequireConfirmedAccount = false;
 })
-.AddRoles<IdentityRole>() 
+.AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Add MVC + Razor Pages
+// MVC + Razor
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
@@ -40,10 +42,10 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var db = services.GetRequiredService<ApplicationDbContext>();
 
-    // Apply migrations automatically
+    // Apply migrations
     await db.Database.MigrateAsync();
 
-    // Seed admin + roles
+    // Seed roles + users
     await SeedRolesAndAdminAsync(services);
 
     // Seed fake data
@@ -52,7 +54,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // -------------------------
-// Configure middleware
+// Middleware
 // -------------------------
 if (app.Environment.IsDevelopment())
 {
@@ -76,24 +78,21 @@ app.UseAuthorization();
 // Routes
 // -------------------------
 
-// Admin area route
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Roles}/{action=Index}/{id?}");
 
-// Default route → Books page
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Books}/{action=Index}/{id?}");
 
-// Required for Identity pages (Login/Register)
 app.MapRazorPages();
 
 app.Run();
 
 
 // -------------------------
-// Seed Admin
+// Seed Admin + Assign Your User
 // -------------------------
 async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
 {
@@ -104,11 +103,11 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
     string adminEmail = "admin@library.com";
     string adminPassword = "Admin123!";
 
-    // Create role if not exists
+    // Create Admin role if it doesn't exist
     if (!await roleManager.RoleExistsAsync(adminRole))
         await roleManager.CreateAsync(new IdentityRole(adminRole));
 
-    // Create admin user if not exists
+    // Create default admin user
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
@@ -116,17 +115,28 @@ async Task SeedRolesAndAdminAsync(IServiceProvider serviceProvider)
         {
             UserName = adminEmail,
             Email = adminEmail,
-            EmailConfirmed = true // allow login immediately
+            EmailConfirmed = true
         };
 
         await userManager.CreateAsync(adminUser, adminPassword);
         await userManager.AddToRoleAsync(adminUser, adminRole);
     }
+
+    // ✅ Assign YOUR user to Admin role
+    var myUser = await userManager.FindByEmailAsync("neemapr3@gmail.com");
+
+    if (myUser != null)
+    {
+        if (!await userManager.IsInRoleAsync(myUser, adminRole))
+        {
+            await userManager.AddToRoleAsync(myUser, adminRole);
+        }
+    }
 }
 
 
 // -------------------------
-// Seed fake Books & Members
+// Seed Books & Members
 // -------------------------
 async Task SeedFakeDataAsync(ApplicationDbContext db)
 {
@@ -159,7 +169,7 @@ async Task SeedFakeDataAsync(ApplicationDbContext db)
 
 
 // -------------------------
-// Seed fake Loans
+// Seed Loans
 // -------------------------
 async Task SeedFakeLoansAsync(ApplicationDbContext db)
 {
@@ -182,7 +192,6 @@ async Task SeedFakeLoansAsync(ApplicationDbContext db)
             var loanDate = DateTime.Now.AddDays(-random.Next(1, 30));
             DateTime? returnedDate = null;
 
-            // Random return logic
             if (random.NextDouble() < 0.5)
             {
                 returnedDate = loanDate.AddDays(random.Next(1, 14));
