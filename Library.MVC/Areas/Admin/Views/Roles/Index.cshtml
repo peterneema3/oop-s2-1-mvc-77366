@@ -2,20 +2,21 @@
 
 @{
     ViewData["Title"] = "Role Management";
+    Layout = "/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Role Management</h2>
+<h2 class="mb-4">Role Management</h2>
 
-<form method="post" asp-action="Create">
-    <input type="text" name="roleName" placeholder="New Role" required />
-    <button type="submit">Create Role</button>
+<form method="post" asp-action="Create" class="mb-4 d-flex gap-2">
+    <input type="text" name="roleName" class="form-control w-auto" placeholder="New Role" required />
+    <button type="submit" class="btn btn-primary">Create Role</button>
 </form>
 
-<table class="table">
-    <thead>
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
         <tr>
             <th>Role Name</th>
-            <th>Actions</th>
+            <th style="width: 180px;">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -24,9 +25,9 @@
             <tr>
                 <td>@role.Name</td>
                 <td>
-                    <form method="post" asp-action="Delete">
+                    <form method="post" asp-action="Delete" class="d-inline">
                         <input type="hidden" name="roleId" value="@role.Id" />
-                        <button type="submit">Delete</button>
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
                 </td>
             </tr>
